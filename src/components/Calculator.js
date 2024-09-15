@@ -3,25 +3,31 @@ import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Calculator = () => {
-    const [input, setInput] = useState('');
+    const [input1, setInput1] = useState('');
+    const [input2, setInput2] = useState('');
     const [operation, setOperation] = useState('');
     const [result, setResult] = useState(null);
     const [history, setHistory] = useState([]);
     const [showHistory, setShowHistory] = useState(false);
+    const [showInput2, setShowInput2] = useState(false);
+    const [showResult, setShowResult] = useState(false);
 
     const handleClick = (value) => {
-        setInput(prevInput => prevInput + value);
+        if (!showInput2) {
+            setInput1(prevInput => prevInput + value);
+        } else {
+            setInput2(prevInput => prevInput + value);
+        }
     };
 
     const handleOperation = (operation) => {
         setOperation(operation);
-        setInput('');
+        setShowInput2(true);
+        setShowResult(false);
     };
 
     const handleCalculate = async () => {
-        if (!input || !operation) return;
-
-        const [num1, num2] = input.split(/([+\-*/])/);
+        if (!input1 || !input2 || !operation) return;
 
         let transformOperationName = '';
 
@@ -45,12 +51,13 @@ const Calculator = () => {
         try {
             const response = await axios.get(`http://localhost:8080/api/calculadora/${transformOperationName}`, {
                 params: {
-                    numero1: parseFloat(num1),
-                    numero2: parseFloat(num2),
+                    numero1: parseFloat(input1),
+                    numero2: parseFloat(input2),
                 },
             });
             setResult(response.data);
-            setInput(response.data.toString()); // Actualiza el input con el resultado
+            setShowInput2(false);
+            setShowResult(true);
             fetchHistory(); // Refresca el historial
         } catch (error) {
             console.error('Error al realizar la operación', error);
@@ -58,9 +65,12 @@ const Calculator = () => {
     };
 
     const handleClear = () => {
-        setInput('');
+        setInput1('');
+        setInput2('');
         setOperation('');
         setResult(null);
+        setShowInput2(false);
+        setShowResult(false);
     };
 
     const fetchHistory = async () => {
@@ -80,78 +90,91 @@ const Calculator = () => {
     };
 
     useEffect(() => {
-        // Optionally load history on mount if you want to
-        // fetchHistory();
+        fetchHistory(); // Carga el historial al iniciar
     }, []);
 
     return (
         <div className="container mt-4">
-            <div className="row">
-                <div className="col-3 offset-md-4">
-                    <div className="card w-75">
+            <div className="row mt-5">
+                <div className="col-5 offset-md-5">
+                    <div className="card w-50">
                         <div className="card-body">
                             <h5 className="card-title">Calculadora</h5>
-                            {!showHistory && (
-                                <>
-                                    <div className="mb-3">
-                                        <input
-                                            type="text"
-                                            className="form-control"
-                                            value={input}
-                                            onChange={(e) => setInput(e.target.value)} // Añadido para manejar cambios
-                                        />
-                                    </div>
-                                    <div className="mb-3">
-                                        <div className="btn-group d-flex flex-wrap">
-                                            {[...Array(10).keys()].map(num => (
-                                                <button
-                                                    key={num}
-                                                    className="btn btn-outline-primary m-1"
-                                                    onClick={() => handleClick(num)}
-                                                >
-                                                    {num}
-                                                </button>
-                                            ))}
-                                            <button
-                                                className="btn btn-outline-primary m-1"
-                                                onClick={() => handleOperation('+')}
-                                            >
-                                                +
-                                            </button>
-                                            <button
-                                                className="btn btn-outline-primary m-1"
-                                                onClick={() => handleOperation('-')}
-                                            >
-                                                -
-                                            </button>
-                                            <button
-                                                className="btn btn-outline-primary m-1"
-                                                onClick={() => handleOperation('*')}
-                                            >
-                                                *
-                                            </button>
-                                            <button
-                                                className="btn btn-outline-primary m-1"
-                                                onClick={() => handleOperation('/')}
-                                            >
-                                                /
-                                            </button>
-                                        </div>
-                                    </div>
+                            <div className="mb-3">
+                                {!showInput2 && !showResult && (
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        value={input1}
+                                        onChange={(e) => setInput1(e.target.value)}
+                                    />
+                                )}
+                                {showInput2 && !showResult && (
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        value={input2}
+                                        onChange={(e) => setInput2(e.target.value)}
+                                    />
+                                )}
+                                {showResult && (
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        value={result}
+                                        readOnly
+                                    />
+                                )}
+                            </div>
+                            <div className="mb-3">
+                                <div className="btn-group d-flex flex-wrap">
+                                    {[...Array(10).keys()].map(num => (
+                                        <button
+                                            key={num}
+                                            className="btn btn-outline-primary m-1"
+                                            onClick={() => handleClick(num)}
+                                        >
+                                            {num}
+                                        </button>
+                                    ))}
                                     <button
-                                        className="btn btn-success me-2"
-                                        onClick={handleCalculate}
+                                        className="btn btn-outline-primary m-1"
+                                        onClick={() => handleOperation('+')}
                                     >
-                                        =
+                                        +
                                     </button>
                                     <button
-                                        className="btn btn-danger"
-                                        onClick={handleClear}
+                                        className="btn btn-outline-primary m-1"
+                                        onClick={() => handleOperation('-')}
                                     >
-                                        C
+                                        -
                                     </button>
-                                </>
-                            )}
+                                    <button
+                                        className="btn btn-outline-primary m-1"
+                                        onClick={() => handleOperation('*')}
+                                    >
+                                        *
+                                    </button>
+                                    <button
+                                        className="btn btn-outline-primary m-1"
+                                        onClick={() => handleOperation('/')}
+                                    >
+                                        /
+                                    </button>
+                                </div>
+                            </div>
+                            <button
+                                className="btn btn-success me-2"
+                                onClick={handleCalculate}
+                            >
+                                =
+                            </button>
+                            <button
+                                className="btn btn-danger"
+                                onClick={handleClear}
+                            >
+                                C
+                            </button>
                             <button
                                 className="btn btn-info ms-2"
                                 onClick={toggleHistory}
